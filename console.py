@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """ Console Module """
 import cmd
+import re
 import sys
 from models.base_model import BaseModel
 from models.__init__ import storage
@@ -114,49 +115,57 @@ class HBNBCommand(cmd.Cmd):
         """ Overrides the emptyline method of CMD """
         pass
 
-    def do_create(self, args, **kwargs):
-        if not args:
+    def do_create(self, args):
+        """ Create an object of any class"""
+        name_pattern = r'(?P<name>(?:[a-zA-Z]|_)(?:[a-zA-Z]|\d|_)*)'
+        ignored_attrs = ('id', 'created_at', 'updated_at', '__class__')
+        class_match = re.match(name_pattern, args)
+        obj_kwargs = {}
+        if class_match is not None:
+            class_name=class_match.group('name')
+            params_str = args[len(class_name):].strip()
+            params=params_str.split(' ')
+            str_pattern = r'(?P<t_str>"([^"]|\")*")'
+            float_pattern = r'(?P<t_float>[-+]?\d+\.\d+)'
+            int_pattern = r'(?P<t_int>[-+]?\d+)'
+            param_pattern = '{}=({}|{}|{})'.format(
+                name_pattern,
+                str_pattern,
+                float_pattern,
+                int_pattern
+            )
+            for param in params:
+                param_match = re.fullmatch(param_pattern, param)
+                if param_match is not None:
+                    key_name = param_match.group('name')
+                    str_v = param_match.group('t_str')
+                    float_v = param_match.group('t_float')
+                    int_v = param_match.group('t_int')
+                    if float_v is not None:
+                        obj_kwargs[key_name] = float(float_v)
+                    if int_v is not None:
+                        obj_kwargs[key_name] = int(int_v)
+                    if str_v is not None:
+                        obj_kwargs[key_name] = str_v[1:-1].replace('_', ' ')
+        else:
+            class_name=args
+
+
+        if not class_name:
             print("** class name missing **")
-        line = args.split(' ', 1)
-        class_name = line[0]
-        try:
-            arguments = line[1]
-        except IndexError:
-            arguments = ''
-        kwargs = {}
-        while arguments:
-            arg = arguments.split(' ', 1)
-            split_arg = arg[0]
-            try:
-                arguments = arg[1]
-            except IndexError:
-                arguments = ''
-            key_value = split_arg.split('=', 1)
-            key = key_value[0]
-            value = key_value[1]
-            if value[0] == '"' and value[len(value) - 1] == '"':
-                value = value.replace('"', '')
-            else:
-                try:
-                    value = int(value)
-                except Exception:
-                    try:
-                        value = float(value)
-                    except Exception:
-                        value = ''
-            if value:
-                kwargs[key] = value
-        if class_name not in HBNBCommand.classes:
+            return
+       
+        elif class_name not in HBNBCommand.classes:
             print("** class doesn't exist **")
             return
+
         new_instance = HBNBCommand.classes[class_name]()
-        for key, val in kwargs.items():
-            if isinstance(val, str):
-                kwargs[key] = kwargs[key].replace("_", " ")
-            new_instance.__dict__.update({key: kwargs[key]})
-        storage.new(new_instance)
+        for key, value in obj_kwargs.items():
+            if key not in ignored_attrs:
+                setattr(new_instance, key, value)
         storage.save()
         print(new_instance.id)
+        storage.save()
 
     def help_create(self):
         """ Help information for the create method """

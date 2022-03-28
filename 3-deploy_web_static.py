@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 """
-deploy web_static
+compress and deploy web_static
 """
 
 from __future__ import with_statement
 from fabric.api import local, run, put, env, settings
 from os import path
+from datetime import datetime
 
 
 env.user = 'ubuntu'
@@ -31,3 +32,31 @@ def do_deploy(archive_path):
     run('sudo rm /tmp/{}'.format(arc_file))
     run('sudo rm -rf /data/web_static/current')
     run('sudo ln -s {} /data/web_static/current'.format(unzip_path))
+
+
+def do_pack():
+    """function to compress a directory"""
+
+    local("mkdir -p versions")
+    current_time = str(datetime.now())
+    current_time = (current_time.split('.'))[0]
+    current_time = current_time.replace(':', '')
+    current_time = current_time.replace(' ', '')
+    current_time = current_time.replace('-', '')
+    file_path = 'versions/web_static_' + current_time + '.tgz'
+    with settings(warn_only=True):
+        result = local("tar -zcvf {} web_static".format(file_path))
+    if result.failed:
+        return None
+    else:
+        return file_path
+
+
+def deploy():
+    """fully compress folder and deploy"""
+
+    compress = do_pack()
+    if not compress:
+        return False
+    deploy = do_deploy(compress)
+    return deploy

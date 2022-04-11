@@ -65,3 +65,7 @@ class FileStorage:
                 if obj.id == val.id:
                     (FileStorage.__objects).pop(key)
                     return
+    
+    def close(self):
+        """ call the reload method"""
+        self.reload()

@@ -51,9 +51,8 @@ class DBStorage():
             objs = session.query(cls)
             for each_obj in objs:
                 if each_obj:
-                    dictionary += each_obj.to_dict()
                     key = each_obj.__class__.__name__ + '.' + each_obj.id
-                    value = obj
+                    value = each_obj
                     dictionary[key] = value
         else:
             for each_cls in all_classes:
@@ -106,8 +105,7 @@ class DBStorage():
         s_factory = sessionmaker(bind=self.__engine, expire_on_commit=False)
         Session = scoped_session(s_factory)
         self.__session = Session()
-    
+
     def close(self):
-        """ close with sql alchemy session"""
-        self.__session.close()
-    
+        """close sql alchemy session"""
+        (self.__session).close()

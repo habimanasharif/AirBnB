@@ -23,11 +23,11 @@ class State(BaseModel, Base):
             """returns a list of all cities identified with a state"""
 
             from models import storage
-            from models import City
+            from models.city import City
 
             all_objects = storage.all()
             city_list = []
             for key, val in all_objects.items():
-                if val.state_id == self.id:
+                if val.id == self.id:
                     city_list.append(val)
             return city_list

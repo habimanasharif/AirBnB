@@ -80,7 +80,6 @@ class HBNBCommand(cmd.Cmd):
                         _args = pline.replace(',', '')
                         # _args = _args.replace('\"', '')
             line = ' '.join([_cmd, _cls, _id, _args])
-            print(line)
 
         except Exception as mess:
             pass
@@ -114,52 +113,50 @@ class HBNBCommand(cmd.Cmd):
         """ Overrides the emptyline method of CMD """
         pass
 
-    def do_create(self, args, **kwargs):
-        if not args:
+    def do_create(self, args):
+        """ Create an object of any class"""
+        # Split the arguments passed into a list.
+        if len(args) < 1:
+            cmds = []
+        else:
+            cmds = args.split(" ")
+
+        if not cmds[0]:
             print("** class name missing **")
-        line = args.split(' ', 1)
-        class_name = line[0]
-        try:
-            arguments = line[1]
-        except IndexError:
-            arguments = ''
-        kwargs = {}
-        while arguments:
-            arg = arguments.split(' ', 1)
-            split_arg = arg[0]
-            try:
-                arguments = arg[1]
-            except IndexError:
-                arguments = ''
-            key_value = split_arg.split('=', 1)
-            key = key_value[0]
-            value = key_value[1]
-            if value[0] == '"' and value[len(value) - 1] == '"':
-                value = value.replace('"', '')
-            else:
-                try:
-                    value = int(value)
-                except Exception:
-                    try:
-                        value = float(value)
-                    except Exception:
-                        value = ''
-            if value:
-                kwargs[key] = value
-        if class_name not in HBNBCommand.classes:
+            return
+        elif cmds[0] not in HBNBCommand.classes:
             print("** class doesn't exist **")
             return
-        new_instance = HBNBCommand.classes[class_name]()
-        for key, val in kwargs.items():
-            if isinstance(val, str):
-                kwargs[key] = kwargs[key].replace("_", " ")
-            new_instance.__dict__.update({key: kwargs[key]})
-        storage.new(new_instance)
+
+        # Translate arguments with the syntax <key name>=<value>
+        # into actual key/value of a dictionary
+        dictionary = {}
+        for arg in cmds[1:]:
+            key_value = arg.split('=')
+
+            # Modify values of type str:
+            # 1. escape double quotes with backslash..
+            # 2. replace underscores with spaces.
+            v = key_value[1]
+            if v[0] == '"' and v[len(v) - 1] == '"':
+                v = v.replace('_', ' ')
+                for i in range(1, len(v) - 1):
+                    v = list(v)
+                    if v[i] == '"':
+                        v[i] = '\"'
+                    v = "".join(v)
+            dictionary[key_value[0]] = v
+
+        new_instance = HBNBCommand.classes[cmds[0]]()
+        for k, v in dictionary.items():
+            setattr(new_instance, k, v)
+        new_instance.save()
         storage.save()
         print(new_instance.id)
+        storage.save()
 
     def help_create(self):
-        """ Help information for the create method """
+        """ Help information for the create method. """
         print("Creates a class of any type")
         print("[Usage]: create <className>\n")
 
@@ -233,18 +230,18 @@ class HBNBCommand(cmd.Cmd):
         """ Shows all objects, or all objects of a class"""
         print_list = []
 
-        all_objects = storage.all()
-        if args:
+        if len(args) > 0:
             args = args.split(' ')[0]  # remove possible trailing args
             if args not in HBNBCommand.classes:
                 print("** class doesn't exist **")
                 return
-            for k, v in all_objects.items():
+            for k, v in storage.all(args).items():
                 if k.split('.')[0] == args:
                     print_list.append(str(v))
         else:
-            for k, v in all_objects.items():
+            for k, v in storage.all().items():
                 print_list.append(str(v))
+
         print(print_list)
 
     def help_all(self):

@@ -1,31 +1,28 @@
 #!/usr/bin/python3
-"""Starts Flask web app
-Routes:
-    / - display "Hello HBNB!"
-    /hbnb - display "HBNB"
-    /c/<text> - display "C <text>"
-    /python/<text> - display "Python is cool"
-"""
-from flask import Flask
+""" a script that starts a Flask web application:"""
 
+from flask import Flask
 app = Flask(__name__)
 
 
 @app.route('/', strict_slashes=False)
-def hbnb_route():
-    """prints Hello HBNB"""
-    return "Hello HBNB!"
+def hello_HBNH():
+    """returns Hello HBNB"""
+    greeting = "Hello HBNB!"
+    return greeting
 
 
 @app.route('/hbnb', strict_slashes=False)
 def hbnb():
-    """prints HBNB"""
-    return "HBNB"
+    """returns HBNB"""
+    display = "HBNB"
+    return dispay
 
 
 @app.route('/c/<string:text>', strict_slashes=False)
 def c_text(text):
-    """prints C followed by <text> content"""
+
+    """returns C followed by <text> content"""
     text = text.replace("_", " ")
     return "C %s" % text
 
@@ -33,7 +30,8 @@ def c_text(text):
 @app.route('/python', strict_slashes=False)
 @app.route('/python/<string:text>', strict_slashes=False)
 def python_text(text="is cool"):
-    """prints Python is cool"""
+
+    """returns Python is cool"""
     text = text.replace("_", " ")
     return "Python %s" % text
 

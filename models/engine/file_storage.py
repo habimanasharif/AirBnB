@@ -4,22 +4,23 @@ import json
 
 
 class FileStorage:
-    """This class manages storage of hbnb models in JSON format"""
+    """This class manages storage of hbnb models in JSON format."""
     __file_path = 'file.json'
     __objects = {}
 
     def all(self, cls=None):
-        """Returns a dictionary of models currently in storage
-        if a clss name is passed in, it returns all instnces of
-        the class, else it returns all instances of all classes"""
-        if cls:
-            cls_objects = {}
-            for key, val in (FileStorage.__objects).items():
-                class_name = (key.split('.', 1))[0]
-                if cls.__name__ == class_name:
-                    cls_objects[key] = val
-            return cls_objects
-        return FileStorage.__objects
+        """Returns a dictionary of models currently in storage.
+
+        args:
+            cls: Name of model to return.
+        """
+        if cls is None:
+            return FileStorage.__objects
+        d = {}
+        for k, v in self.__objects.items():
+            if type(v) == cls:
+                d[k] = v
+        return d
 
     def new(self, obj):
         """Adds new object to storage dictionary"""
@@ -34,11 +35,20 @@ class FileStorage:
                 temp[key] = val.to_dict()
             json.dump(temp, f)
 
+    def delete(self, obj=None):
+        """Removes on instance from self.__objects if obj != None."""
+        if obj is None:
+            return
+        for k, v in self.__objects.items():
+            if obj == v:
+                del self.__objects[k]
+                break
+
     def reload(self):
         """Loads storage dictionary from file"""
         from models.base_model import BaseModel
-        from models.place import Place
         from models.user import User
+        from models.place import Place
         from models.state import State
         from models.city import City
         from models.amenity import Amenity
@@ -58,14 +68,7 @@ class FileStorage:
         except FileNotFoundError:
             pass
 
-    def delete(self, obj=None):
-        """method that deletes an object from the list of objects"""
-        if obj:
-            for key, val in (FileStorage.__objects).items():
-                if obj.id == val.id:
-                    (FileStorage.__objects).pop(key)
-                    return
-    
     def close(self):
-        """ call the reload method"""
+        """calls reload() method for deserializing
+        the JSON file to objects"""
         self.reload()

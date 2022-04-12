@@ -1,75 +1,82 @@
 #!/usr/bin/python3
 """
-remove old archives from deployment
+    Deploys an archive to web servers
 """
-
-
-from __future__ import with_statement
-from fabric.api import local, run, put, env, settings, sudo
-from os import path
+from fabric.operations import env, local, put, run
 from datetime import datetime
+import os
+from fabric.context_managers import lcd
 
 
-env.user = 'ubuntu'
-env.hosts = ['34.148.87.245', '3.231.218.82']
-
-
-def do_deploy(archive_path):
-    """function to use fabric to deploy a directory"""
-
-    if archive_path == '':
-        return False
-    if not path.exists(archive_path):
-        return False
-    arc_file = archive_path.split('/')
-    arc_file = arc_file[len(arc_file) - 1]
-    folder_name = (arc_file.split('.'))[0]
-    unzip_path = '/data/web_static/releases/{}'.format(folder_name)
-    put(archive_path, '/tmp/')
-    run('sudo mkdir -p {}'.format(unzip_path))
-    run('sudo tar -zxf /tmp/{} -C {}'.format(arc_file, unzip_path))
-    run('sudo mv {}/web_static/* {}'.format(unzip_path, unzip_path))
-    run('sudo rm -rf {}/web_static'.format(unzip_path))
-    run('sudo rm /tmp/{}'.format(arc_file))
-    run('sudo rm -rf /data/web_static/current')
-    run('sudo ln -s {} /data/web_static/current'.format(unzip_path))
+env.hosts = ["34.148.182.81", "3.235.177.10"]
+env.user = "ubuntu"
 
 
 def do_pack():
-    """function to compress a directory"""
+    """
+        Tarballs content in web_static folder
+    """
 
+    time = datetime.now().strftime("%Y%m%d%H%M%S")
+    name = "versions/web_static_{}.tgz".format(time)
     local("mkdir -p versions")
-    current_time = str(datetime.now())
-    current_time = (current_time.split('.'))[0]
-    current_time = current_time.replace(':', '')
-    current_time = current_time.replace(' ', '')
-    current_time = current_time.replace('-', '')
-    file_path = 'versions/web_static_' + current_time + '.tgz'
-    with settings(warn_only=True):
-        result = local("tar -zcvf {} web_static".format(file_path))
-    if result.failed:
-        return None
+    packing = local("tar -czvf {} web_static".format(name))
+    if packing.succeeded:
+        return name
     else:
-        return file_path
+        return None
+
+
+def do_deploy(archive_path):
+    """
+        Deploys packed content to servers
+    """
+    if os.path.exists(archive_path) is not True:
+        return False
+    if not put(archive_path, "/tmp/").succeeded:
+        return False
+
+    filename = archive_path[9:]
+    foldername = "/data/web_static/releases/" + filename[:-4]
+    filename = "/tmp/" + filename
+
+    if run("mkdir -p {}".format(foldername)).failed:
+        return False
+    if run("tar -zxf {} -C {}". format(filename, foldername)).failed:
+        return False
+    if run("rm {}".format(filename)).failed:
+        return False
+    if run('mv {}/web_static/* {}'.format(foldername, foldername)).failed:
+        return False
+    if run("rm -rf {}/web_static".format(foldername)).failed:
+        return False
+    if run("rm -rf /data/web_static/current").failed:
+        return False
+    if run("ln -s {} /data/web_static/current".format(foldername)).failed:
+        return False
+
+    return True
 
 
 def deploy():
-    """fully compress folder and deploy"""
+    """
+        Deploy function for pack and do_deploy
+    """
+    path = do_pack()
 
-    compress = do_pack()
-    if not compress:
+    if path is False:
         return False
-    deploy = do_deploy(compress)
-    return deploy
+
+    return do_deploy(path)
 
 
-def do_clean(number=0):
-    """function to delete archives"""
+def do_clean():
+    """
+        Cleans the version directory by deleting outdated archives
+    """
+    files = local("ls -ltr")
+    print(len(files))
 
-    number = int(number)
-    if number == 0:
-        number += 1
-    num = str(number)
-    path = '/data/web_static/releases'
-    sudo('realpath {}/* | head -n -{} | xargs rm -rf --'.format(path, num))
-    local('realpath versions/* | head -n -{} | xargs rm -rf --'.format(num))
+
+if __name__ == "__main__":
+    do_pack()

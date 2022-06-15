@@ -1,45 +1,48 @@
 #!/usr/bin/python3
-""" a script that starts a Flask web application:"""
-
-from flask import Flask, render_template
+""" Starts a Flash Web Application """
 from models import storage
 from models.state import State
-
+from os import environ
+from flask import Flask, render_template
 app = Flask(__name__)
-app.url_map.strict_slashes = False
-
-
-@app.route('/states')
-@app.route('/states/<id>')
-def cities_by_states(id=None):
-    """ The 'states' route with varible subroute.
-        Sends a corresponding template.
-        Attributes:
-            @id: id of a state
-    """
-    states = storage.all(State)
-    state = None
-
-    try:
-        if id is not None:
-            id = "State." + id
-            state = states[id]
-        else:
-            states = states.values()
-            state = None
-    except Exception:
-        state = None
-        states = None
-
-    return render_template('9-states.html', states=states, state=state)
+# app.jinja_env.trim_blocks = True
+# app.jinja_env.lstrip_blocks = True
 
 
 @app.teardown_appcontext
-def teardown_appcontext(self):
-    """ Hook that runs before app closes
-    """
+def close_db(error):
+    """ Remove the current SQLAlchemy Session """
     storage.close()
 
 
+@app.route('/states', strict_slashes=False)
+@app.route('/states/<id>', strict_slashes=False)
+def states_state(id=""):
+    """ displays a HTML page with a list of cities by states """
+    states = storage.all(State).values()
+    states = sorted(states, key=lambda k: k.name)
+    found = 0
+    state = ""
+    cities = []
+
+    for i in states:
+        if id == i.id:
+            state = i
+            found = 1
+            break
+    if found:
+        states = sorted(state.cities, key=lambda k: k.name)
+        state = state.name
+
+    if id and not found:
+        found = 2
+
+    return render_template('9-states.html',
+                           state=state,
+                           array=states,
+                           found=found)
+
+
 if __name__ == "__main__":
+    """ Main Function """
     app.run(host='0.0.0.0', port=5000)

@@ -1,26 +1,20 @@
 #!/usr/bin/python3
-""" a script that starts a Flask web application:"""
-
+""" Starts a Flash Web Application HBNB"""
 from flask import Flask
 app = Flask(__name__)
 
 
 @app.route('/', strict_slashes=False)
-def hello_HBNH():
-
-    """returns 'Hello HBNB!'"""
-    greeting = "Hello HBNB!"
-    return greeting
+def hello_hbnb():
+    """ Prints a Message when / is called """
+    return 'Hello HBNB!'
 
 
 @app.route('/hbnb', strict_slashes=False)
 def hbnb():
+    """ Prints a Message when /hbnb is called """
+    return 'HBNB'
 
-    """returns a string dispay'HBNB'"""
-    display = 'HBNB'
-    return dispay
-
-
-if __name__ == '__main__':
-
-    app.run(host='0.0.0.0')
+if __name__ == "__main__":
+    """ Main Function """
+    app.run(host='0.0.0.0', port=5000)
